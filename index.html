@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + Lit + TS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="/src/chord/index.ts"></script>
+
+    <style>
+      body {
+        padding: 24px;
+      }
+      .demo {
+        display: flex;
+        align-items: center;
+      }
+      #chord {
+        width: 700px;
+        height: 700px;
+      }
+    </style>
+  </head>
+  <body>
+    <setect-chord id="chord"></setect-chord>
+    <script>
+      const chord = document.getElementById('chord')
+      const matrix = [
+        // to black, blond, brown, red
+        [11975, 5871, 8916, 2868], // from black
+        [1951, 10048, 2060, 6171], // from blond
+        [8010, 16145, 8090, 8045], // from brown
+        [1013, 990, 940, 6907], // from red
+      ]
+      chord.matrixData = matrix
+      chord.colors = ['black', 'rgb(255, 221, 137)', 'rgb(149, 114, 68)', 'rgb(242, 98, 35)']
+      chord.labels = ['Black', 'Blond', 'Brown', 'Red']
+
+      chord.addEventListener('rightClick', (e) => console.log(e))
+      chord.addEventListener('slideClick', (e) => console.log(e))
+      chord.addEventListener('svgClick', (e) => console.log(e))
+      chord.addEventListener('ribbonClick', (e) => console.log(e))
+
+      chord.addEventListener('slicePointerOver', (e) => console.log(e))
+      chord.addEventListener('slicePointerOut', (e) => console.log(e))
+      chord.addEventListener('slicePointerMove', (e) => console.log(e))
+
+      chord.addEventListener('ribbonPointerOver', (e) => console.log(e))
+      chord.addEventListener('ribbonPointerOut', (e) => console.log(e))
+      chord.addEventListener('ribbonPointerMove', (e) => console.log(e))
+    </script>
+  </body>
+</html>

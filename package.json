@@ -1,0 +1,41 @@
+{
+  "name": "setecteocen-chord",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Setect EOCEN visuals chord",
+  "scripts": {
+    "pbiviz": "pbiviz",
+    "start": "vite --open",
+    "lint": "DEBUG=eslint:cli-engine eslint . --ext .ts --fix --ignore-path .gitignore",
+    "bi": "pbiviz start"
+  },
+  "author": "Setect EOCEN",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "d3-chord": "3.0.1",
+    "d3-selection": "3.0.0",
+    "d3-shape": "3.0.1",
+    "lit": "^3.0.2",
+    "lodash-es": "4.17.21",
+    "powerbi-visuals-api": "~5.4.0",
+    "powerbi-visuals-utils-chartutils": "6.0.1",
+    "powerbi-visuals-utils-formattingutils": "6.0.1",
+    "powerbi-visuals-utils-formattingmodel": "6.0.0",
+    "powerbi-visuals-utils-interactivityutils": "6.0.2",
+    "powerbi-visuals-utils-svgutils": "6.0.1"
+  },
+  "devDependencies": {
+    "vite": "5.0.0",
+    "@types/d3-array": "3.0.1",
+    "@types/d3-chord": "3.0.1",
+    "@types/d3-selection": "3.0.1",
+    "@types/d3-shape": "3.0.2",
+    "@types/lodash-es": "^4.17.11",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "eslint": "8.53.0",
+    "eslint-plugin-powerbi-visuals": "^0.8.1",
+    "powerbi-visuals-tools": "^5.2.1",
+    "prettier": "2.8.2",
+    "typescript": "~5.2.0"
+  }
+}
