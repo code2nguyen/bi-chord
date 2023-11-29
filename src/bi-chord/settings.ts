@@ -1,55 +1,72 @@
-import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel'
+// powerbi.extensibility.utils.color
+import { ColorHelper } from 'powerbi-visuals-utils-colorutils'
 
-import FormattingSettingsCard = formattingSettings.SimpleCard
-import FormattingSettingsSlice = formattingSettings.Slice
-import FormattingSettingsModel = formattingSettings.Model
+// powerbi.extensibility.utils.chart.dataLabel
+import { dataLabelUtils } from 'powerbi-visuals-utils-chartutils'
 
-/**
- * Data Point Formatting Card
- */
-class DataPointCardSettings extends FormattingSettingsCard {
-  defaultColor = new formattingSettings.ColorPicker({
-    name: 'defaultColor',
-    displayName: 'Default color',
-    value: { value: '' },
-  })
+// powerbi.extensibility.utils.dataview
+import { dataViewObjectsParser } from 'powerbi-visuals-utils-dataviewutils'
+import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser
 
-  showAllDataPoints = new formattingSettings.ToggleSwitch({
-    name: 'showAllDataPoints',
-    displayName: 'Show all',
-    value: true,
-  })
+// powerbi
+import powerbiVisualsApi from 'powerbi-visuals-api'
+import DataView = powerbiVisualsApi.DataView
 
-  fill = new formattingSettings.ColorPicker({
-    name: 'fill',
-    displayName: 'Fill',
-    value: { value: '' },
-  })
+// powerbi.extensibility
+import IColorPalette = powerbiVisualsApi.extensibility.IColorPalette
 
-  fillRule = new formattingSettings.ColorPicker({
-    name: 'fillRule',
-    displayName: 'Color saturation',
-    value: { value: '' },
-  })
-
-  fontSize = new formattingSettings.NumUpDown({
-    name: 'fontSize',
-    displayName: 'Text Size',
-    value: 12,
-  })
-
-  name: string = 'dataPoint'
-  displayName: string = 'Data colors'
-  slices: Array<FormattingSettingsSlice> = [this.defaultColor, this.showAllDataPoints, this.fill, this.fillRule, this.fontSize]
+export class AxisSettings {
+  public show: boolean = true
+  public color: string = '#212121'
 }
 
-/**
- * visual settings model class
- *
- */
-export class VisualFormattingSettingsModel extends FormattingSettingsModel {
-  // Create formatting settings model formatting cards
-  dataPointCard = new DataPointCardSettings()
+export class DataPointSettings {
+  public showAllDataPoints: boolean = false
+  public defaultColor: string = null
+}
 
-  cards = [this.dataPointCard]
+export class LabelsSettings {
+  public show: boolean = true
+  public fontColor: string = dataLabelUtils.defaultLabelColor
+  public fontSize: number = dataLabelUtils.DefaultFontSizeInPt
+  public fontItalic: boolean = false
+  public fontBold: boolean = false
+  public fontUnderline: boolean = false
+  public fontFamily: string = dataLabelUtils.StandardFontFamily
+}
+
+export class ChordSettings {
+  public strokeColor: string = '#000000'
+  public strokeWidth: number = 0.5
+  public strokeWidthMin: number = 0.5
+  public strokeWidthMax: number = 1
+}
+
+export class Settings extends DataViewObjectsParser {
+  public axis: AxisSettings = new AxisSettings()
+  public dataPoint: DataPointSettings = new DataPointSettings()
+  public labels: LabelsSettings = new LabelsSettings()
+  public chord: ChordSettings = new ChordSettings()
+
+  public static PARSE_SETTINGS(dataView: DataView, colorPalette?: IColorPalette): Settings {
+    const settings: Settings = this.parse<Settings>(dataView)
+
+    const colorHelper: ColorHelper = new ColorHelper(colorPalette)
+
+    settings.axis.color = colorHelper.getHighContrastColor('foreground', settings.axis.color)
+
+    settings.dataPoint.defaultColor = colorHelper.getHighContrastColor('background', settings.dataPoint.defaultColor)
+
+    settings.labels.fontColor = colorHelper.getHighContrastColor('foreground', settings.labels.fontColor)
+
+    settings.chord.strokeColor = colorHelper.getHighContrastColor('foreground', settings.chord.strokeColor)
+
+    if (colorPalette && colorHelper.isHighContrast) {
+      settings.chord.strokeWidth = settings.chord.strokeWidthMax
+    } else {
+      settings.chord.strokeWidth = settings.chord.strokeWidthMin
+    }
+
+    return settings
+  }
 }

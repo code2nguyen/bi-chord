@@ -1,7 +1,7 @@
 import { LitElement, html, css, PropertyValueMap } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { select, Selection } from 'd3-selection'
-import { arc, Arc, DefaultArcObject, Datum } from 'd3-shape'
+import { arc, Arc, DefaultArcObject } from 'd3-shape'
 import { chord, ribbon, Chords, ChordLayout, ChordGroup } from 'd3-chord'
 import { sum, range } from 'd3-array'
 // powerbi.extensibility.utils.chart
@@ -34,12 +34,6 @@ import translate = manipulation.translate
 import { LabelEnabledDataPoint } from 'powerbi-visuals-utils-chartutils/lib/dataLabel/dataLabelInterfaces'
 import { translateAndRotate } from 'powerbi-visuals-utils-svgutils/lib/manipulation'
 
-export interface ChordLabelOptions {
-  show: boolean
-  color: string
-  fontSize: number
-}
-
 export interface ChordArcLabelData {
   label: string
   labelColor: string
@@ -56,6 +50,14 @@ export interface ChordArcDescriptor extends ChordGroup {
 
 @customElement('setect-chord')
 export class ChordChart extends LitElement {
+  private static LABEL_MARGIN = 10
+  private static DEFAULT_DY = '.35em'
+  private static POLYLINE_OPACITY = 0.5
+  private static TICKS_FONT_SIZE = 12
+  private static DEFAULT_FORMAT_VALUE: string = '0.##'
+  private static DEFAULT_TICK_LINE_COLOR: string = '#000'
+  private static DEFAULT_TICK_SHIFT_X: number = 8
+
   static styles = [
     css`
       :host {
@@ -76,42 +78,34 @@ export class ChordChart extends LitElement {
 
       .tick-text {
         pointer-events: none;
-        font-size: 12px;
+        font-size: ${ChordChart.TICKS_FONT_SIZE}px;
       }
     `,
   ]
 
-  private static LabelMargin = 10
-  private static DefaultDY = '.35em'
-  private static InnerLinePointMultiplier = 2.05
-  private static PolylineOpacity = 0.5
-  private static TicksFontSize = 12
-  private static DefaultFormatValue: string = '0.##'
-  private static DefaultTickLineColorValue: string = '#000'
-  private static DefaultTickShiftX: number = 8
-
   // Data
   @property({ type: Array }) matrixData: number[][] = []
   @property({ type: Array }) labels: string[] = []
-  @property({ type: Array }) selectionIndexes: number[] = [2]
+  @property({ type: Array }) selectionIndexes: number[] = []
 
   // Styles
   @property({ type: Array }) colors: string[] = []
   @property({ type: String }) strokeColor = '#000000'
   @property({ type: Number }) strokeWidth = 0.5
 
-  @property({ type: Number }) sliceWidth = 0
+  @property({ type: Number }) sliceGap = 0
   @property({ type: Number }) chordPadAngle = 0.1
 
   @property({ type: Number }) tickUnit = 5
   @property({ type: String }) axisColor = '#212121'
   @property({ type: Boolean }) hideAxis = false
+
   @property({ type: Boolean }) hideLabel = false
-  @property({ type: Object }) labelOptions: ChordLabelOptions = {
-    show: true,
-    color: 'rgb(119, 119, 119)',
-    fontSize: 9,
-  }
+  @property({ type: Boolean }) labelFontSize = 9
+  @property({ type: Boolean }) labelColor = 'rgb(119, 119, 119'
+
+  @property({ type: Number }) width = 0
+  @property({ type: Number }) height = 0
 
   private $el?: SVGElement
 
@@ -161,8 +155,8 @@ export class ChordChart extends LitElement {
     if (!this.$el || !this.matrixData || this.matrixData.length == 0) {
       return
     }
-    this.viewportWidth = this.clientWidth
-    this.viewportHeight = this.clientHeight
+    this.viewportWidth = this.width || this.clientWidth
+    this.viewportHeight = this.height || this.clientHeight
 
     const { radius, innerRadius } = this.calculateRadius()
     const chordGen = chord().padAngle(this.chordPadAngle)
@@ -180,7 +174,7 @@ export class ChordChart extends LitElement {
   }
 
   private updateLabels(radius: number, innerRadius: number, chordVals: Chords) {
-    if (this.labelOptions.show) {
+    if (!this.hideLabel) {
       // Multiplier to place the end point of the reference line at 0.05 * radius away from the outer edge of the chord/pie.
       const middleRadius = innerRadius + (radius - innerRadius) / 2
       const outerArc = arc().innerRadius(middleRadius).outerRadius(middleRadius)
@@ -191,7 +185,7 @@ export class ChordChart extends LitElement {
           width: this.viewportWidth,
           height: this.viewportHeight,
         },
-        chordVals.groups.map((g) => ({ ...g, label: this.labels[g.index], labelColor: this.labelOptions.color })),
+        chordVals.groups.map((g) => ({ ...g, label: this.labels[g.index], labelColor: this.labelColor })),
         labelLayout,
         true
       )
@@ -217,7 +211,7 @@ export class ChordChart extends LitElement {
     dataLabels
       .attr('x', (d: LabelEnabledDataPoint) => d.labelX)
       .attr('y', (d: LabelEnabledDataPoint) => d.labelY)
-      .attr('dy', ChordChart.DefaultDY)
+      .attr('dy', ChordChart.DEFAULT_DY)
       .text((d: LabelEnabledDataPoint) => d.labeltext)
 
     Object.keys(layout.style).forEach((x) => dataLabels.style(x, layout.style[x]))
@@ -236,20 +230,20 @@ export class ChordChart extends LitElement {
     lines
       .attr('points', (d: any): any => {
         const textPoint = outerArc.centroid(<any>d)
-        textPoint[0] = (radius + ChordChart.LabelMargin / 2) * (midAngle(d) < Math.PI ? 1 : -1)
+        textPoint[0] = (radius + ChordChart.LABEL_MARGIN / 2) * (midAngle(d) < Math.PI ? 1 : -1)
         const midPoint = outerArc.centroid(d)
         const chartPoint = innerrArc.centroid(d)
 
         return [chartPoint, midPoint, textPoint]
       })
-      .style('opacity', ChordChart.PolylineOpacity)
+      .style('opacity', ChordChart.POLYLINE_OPACITY)
       .style('stroke', (d: any) => d.labelColor)
       .style('pointer-events', 'none')
   }
 
   private getChordChartLabelLayout(outerArc: Arc<any, DefaultArcObject>, radius: number): ILabelLayout {
     const midAngle = (d: ChordGroup) => d.startAngle + (d.endAngle - d.startAngle) / 2
-    const maxLabelWidth = (this.viewportWidth - radius * 2 - ChordChart.LabelMargin * 2) / 1.6
+    const maxLabelWidth = (this.viewportWidth - radius * 2 - ChordChart.LABEL_MARGIN * 2) / 1.6
 
     return {
       labelText: (d) => {
@@ -257,11 +251,11 @@ export class ChordChart extends LitElement {
         return dataLabelUtils.getLabelFormattedText({
           label: d.label,
           maxWidth: maxLabelWidth,
-          fontSize: PixelConverter.fromPointToPixel(this.labelOptions.fontSize),
+          fontSize: PixelConverter.fromPointToPixel(this.labelFontSize),
         })
       },
       labelLayout: {
-        x: (d: ChordGroup) => (radius + ChordChart.LabelMargin) * (midAngle(d) < Math.PI ? 1 : -1),
+        x: (d: ChordGroup) => (radius + ChordChart.LABEL_MARGIN) * (midAngle(d) < Math.PI ? 1 : -1),
         y: (d: ChordGroup) => {
           const pos = outerArc.centroid(<any>d)
           return pos[1]
@@ -271,7 +265,7 @@ export class ChordChart extends LitElement {
       style: {
         fill: (d: any) => d.labelColor,
         'text-anchor': (d: any) => (midAngle(d) < Math.PI ? 'start' : 'end'),
-        'font-size': () => PixelConverter.fromPointToPixel(this.labelOptions.fontSize),
+        'font-size': () => PixelConverter.fromPointToPixel(this.labelFontSize),
       },
     }
   }
@@ -349,7 +343,7 @@ export class ChordChart extends LitElement {
     const radiusCoeff = (radius / Math.abs(maxValue - minValue)) * 1.25
 
     const formatter = createFormatter({
-      format: ChordChart.DefaultFormatValue,
+      format: ChordChart.DEFAULT_FORMAT_VALUE,
       value: maxValue,
     })
 
@@ -362,7 +356,7 @@ export class ChordChart extends LitElement {
       }
       for (let i = 1; i < rangeValue.length; i++) {
         const gapSize = Math.abs(rangeValue[i] - rangeValue[i - 1]) * radiusCoeff
-        if (gapSize < ChordChart.TicksFontSize) {
+        if (gapSize < ChordChart.TICKS_FONT_SIZE) {
           if (rangeValue.length > 2 && i === rangeValue.length - 1) {
             rangeValue.splice(--i, 1)
           } else {
@@ -390,7 +384,7 @@ export class ChordChart extends LitElement {
     tickLines = tickLines.merge(tickLines.enter().append('line').classed('tick-line', true))
 
     tickLines
-      .style('stroke', ChordChart.DefaultTickLineColorValue)
+      .style('stroke', ChordChart.DEFAULT_TICK_LINE_COLOR)
       .attr('x1', 1)
       .attr('y1', 0)
       .attr('x2', 5)
@@ -402,8 +396,8 @@ export class ChordChart extends LitElement {
     tickText = tickText.merge(tickText.enter().append('text'))
     tickText
       .classed('tick-text', true)
-      .attr('x', ChordChart.DefaultTickShiftX)
-      .attr('dy', ChordChart.DefaultDY)
+      .attr('x', ChordChart.DEFAULT_TICK_SHIFT_X)
+      .attr('dy', ChordChart.DEFAULT_DY)
       .text((d) => (<any>d).label)
       .style('text-anchor', (d) => ((<any>d).angle > Math.PI ? 'end' : null))
       .style('fill', this.axisColor)
@@ -422,7 +416,7 @@ export class ChordChart extends LitElement {
     const denom = 2 + 1 / (1 + Math.exp(-5 * (hw - 1)))
     radius = Math.min(this.viewportHeight, this.viewportWidth) / denom
 
-    const innerRadius = this.sliceWidth ? radius - this.sliceWidth : radius * 0.8
+    const innerRadius = this.sliceGap ? radius - this.sliceGap : radius * 0.8
     return { radius, innerRadius }
   }
 

@@ -1,21 +1,25 @@
 {
   "visual": {
-    "name": "circleCard",
-    "displayName": "CircleCard",
-    "guid": "circleCard751916EB820D4607A25643204135914E",
+    "name": "ChordChart",
+    "displayName": "Setect Chord",
+    "guid": "ChordChart751916EB820D4607A25643204135914E",
     "visualClassName": "Visual",
-    "version": "1.0.0.0",
-    "description": "",
+    "version": "0.0.0.0",
+    "description": "A chord diagram is a graphical method of displaying the inter-relationships between data in a matrix.",
     "supportUrl": "",
     "gitHubUrl": ""
   },
   "apiVersion": "5.4.0",
-  "author": { "name": "", "email": "" },
-  "assets": { "icon": "assets/icon.png" },
+  "author": {
+    "name": "Setect EOCEN",
+    "email": "code2nguyen@gmail.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
   "externalJS": null,
-  "style": "src/bi-chord/styles.scss",
   "capabilities": "capabilities.json",
   "dependencies": null,
   "stringResources": [],
-  "version": "1.0.0.0"
+  "version": "0.0.0.0"
 }

@@ -1,79 +1,176 @@
 {
-    "dataRoles": [
+  "dataRoles": [
+    {
+      "displayName": "From",
+      "displayNameKey": "Role_From",
+      "name": "Category",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "To",
+      "displayNameKey": "Role_To",
+      "name": "Series",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Values",
+      "displayNameKey": "Role_Values",
+      "name": "Y",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
         {
-            "displayName": "Category Data",
-            "name": "category",
-            "kind": "Grouping"
+          "Category": {
+            "max": 1
+          },
+          "Series": {
+            "max": 0
+          }
         },
         {
-            "displayName": "Measure Data",
-            "name": "measure",
-            "kind": "Measure"
-        }
-    ],
-    "objects": {
-        "dataPoint": {
-            "properties": {
-                "defaultColor": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "showAllDataPoints": {
-                    "type": {
-                        "bool": true
-                    }
-                },
-                "fill": {
-                    "type": {
-                        "fill": {
-                            "solid": {
-                                "color": true
-                            }
-                        }
-                    }
-                },
-                "fillRule": {
-                    "type": {
-                        "fill": {}
-                    }
-                },
-                 "fontSize": {
-                    "type": {
-                        "formatting": {
-                            "fontSize": true
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "dataViewMappings": [
+          "Category": {
+            "max": 1
+          },
+          "Series": {
+            "min": 1,
+            "max": 1
+          },
+          "Y": {
+            "max": 1
+          }
+        },
         {
-            "categorical": {
-                "categories": {
-                    "for": {
-                        "in": "category"
-                    },
-                    "dataReductionAlgorithm": {
-                        "top": {}
-                    }
-                },
-                "values": {
-                    "select": [
-                        {
-                            "bind": {
-                                "to": "measure"
-                            }
-                        }
-                    ]
-                }
-            }
+          "Category": {
+            "max": 1
+          },
+          "Series": {
+            "max": 0
+          },
+          "Y": {
+            "min": 0,
+            "max": 1
+          }
         }
-    ],
-    "privileges": []
+      ],
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "Category"
+          },
+          "dataReductionAlgorithm": {
+            "top": {}
+          }
+        },
+        "values": {
+          "group": {
+            "by": "Series",
+            "select": [
+              {
+                "bind": {
+                  "to": "Y"
+                }
+              }
+            ],
+            "dataReductionAlgorithm": {
+              "top": {}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "dataPoint": {
+      "properties": {
+        "defaultColor": {
+          "displayName": "Default color",
+          "displayNameKey": "Visual_Default_Color",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showAllDataPoints": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fill": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "axis": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "labels": {
+      "properties": {
+        "show": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "fontFamily": {
+          "type": {
+            "formatting": {
+              "fontFamily": true
+            }
+          }
+        },
+        "fontSize": {
+          "type": {
+            "formatting": {
+              "fontSize": true
+            }
+          }
+        },
+        "fontBold": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontUnderline": {
+          "type": {
+            "bool": true
+          }
+        },
+        "fontItalic": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "supportsHighlight": true,
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true,
+  "privileges": []
 }

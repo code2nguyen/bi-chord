@@ -1,26 +1,35 @@
-import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
-import FormattingSettingsCard = formattingSettings.SimpleCard;
-import FormattingSettingsSlice = formattingSettings.Slice;
-import FormattingSettingsModel = formattingSettings.Model;
-/**
- * Data Point Formatting Card
- */
-declare class DataPointCardSettings extends FormattingSettingsCard {
-    defaultColor: formattingSettings.ColorPicker;
-    showAllDataPoints: formattingSettings.ToggleSwitch;
-    fill: formattingSettings.ColorPicker;
-    fillRule: formattingSettings.ColorPicker;
-    fontSize: formattingSettings.NumUpDown;
-    name: string;
-    displayName: string;
-    slices: Array<FormattingSettingsSlice>;
+import { dataViewObjectsParser } from 'powerbi-visuals-utils-dataviewutils';
+import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
+import powerbiVisualsApi from 'powerbi-visuals-api';
+import DataView = powerbiVisualsApi.DataView;
+import IColorPalette = powerbiVisualsApi.extensibility.IColorPalette;
+export declare class AxisSettings {
+    show: boolean;
+    color: string;
 }
-/**
- * visual settings model class
- *
- */
-export declare class VisualFormattingSettingsModel extends FormattingSettingsModel {
-    dataPointCard: DataPointCardSettings;
-    cards: DataPointCardSettings[];
+export declare class DataPointSettings {
+    showAllDataPoints: boolean;
+    defaultColor: string;
 }
-export {};
+export declare class LabelsSettings {
+    show: boolean;
+    fontColor: string;
+    fontSize: number;
+    fontItalic: boolean;
+    fontBold: boolean;
+    fontUnderline: boolean;
+    fontFamily: string;
+}
+export declare class ChordSettings {
+    strokeColor: string;
+    strokeWidth: number;
+    strokeWidthMin: number;
+    strokeWidthMax: number;
+}
+export declare class Settings extends DataViewObjectsParser {
+    axis: AxisSettings;
+    dataPoint: DataPointSettings;
+    labels: LabelsSettings;
+    chord: ChordSettings;
+    static PARSE_SETTINGS(dataView: DataView, colorPalette?: IColorPalette): Settings;
+}
