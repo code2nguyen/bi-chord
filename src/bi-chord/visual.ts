@@ -169,7 +169,7 @@ export class Visual implements IVisual {
       const ySeries = series.values[yFieldIndex]
       const row = new Array<number>(totalFields).fill(0)
 
-      for (let j = 0; j < categorySize; j++) {
+      for (let j = categorySize - 1; j >= 0; j--) {
         row[valueSize + j] = (ySeries.values[j] as number) ?? 0
       }
 
@@ -184,7 +184,7 @@ export class Visual implements IVisual {
 
       matrixData.push(row)
     }
-    for (let i = 0; i < categorySize; i++) {
+    for (let i = categorySize - 1; i >= 0; i--) {
       const row = new Array<number>(totalFields).fill(0)
       const label = categoryValues[i].toString()
       for (let j = 0; j < valueSize; j++) {
