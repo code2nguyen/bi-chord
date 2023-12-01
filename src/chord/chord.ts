@@ -303,7 +303,9 @@ export class ChordChart extends LitElement {
       this.chordGroup.selectAll('path.chord').style('opacity', 1)
     } else if (this.selectionIndexes.length === 1) {
       this.chordGroup.selectAll('path.chord').style('opacity', (d: any) => {
-        return d.source.index == this.selectionIndexes[0] ? 1 : this.dimmedOpacity
+        return d.source.index == this.selectionIndexes[0] || d.target.index == this.selectionIndexes[0]
+          ? 1
+          : this.dimmedOpacity
       })
       this.sliceGroup.selectAll('path.slice').style('opacity', (d: any) => {
         return d.index == this.selectionIndexes[0] ? 1 : this.dimmedOpacity

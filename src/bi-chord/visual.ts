@@ -102,10 +102,12 @@ export class Visual implements IVisual {
   constructor(options: VisualConstructorOptions) {
     this.host = options.host
     this.localizationManager = this.host.createLocalizationManager()
+    this.selectionManager = this.host.createSelectionManager()
     this.eventService = options.host.eventService
     this.tooltipService = this.host.tooltipService
     this.colors = options.host.colorPalette
     this.rootElement = options.element
+
     this.initLayout()
   }
 
@@ -123,6 +125,9 @@ export class Visual implements IVisual {
       @ribbonPointerOver=${this.handleRibbonPointerOver}
       @ribbonPointerMove=${this.handleRibbonPointerMove}
       @ribbonPointerOut=${this.hideTooltip}
+      @sliceClick=${this.handleSlideClick}
+      @svgClick=${this.handleSvgClick}
+      .selectionIndexes=${this.chordChartProps.selectionIndexes}
       .matrixData=${this.chordChartProps.matrixData}
       .colors=${this.chordChartProps.colors}
       .width=${this.layout.viewport.width}
@@ -151,7 +156,7 @@ export class Visual implements IVisual {
       // parse data
       const data = this.parseData(options)
       if (data) {
-        this.chordChartProps = data.props
+        this.chordChartProps = { ...data.props, selectionIndexes: this.chordChartProps?.selectionIndexes ?? [] }
         this.selectionIds = data.selectionIds
         this.seriesCount = data.seriesCount
         this.categoryCount = data.categoryCount
@@ -165,10 +170,15 @@ export class Visual implements IVisual {
       this.layout.resetMargin()
       this.layout.margin.top = this.layout.margin.bottom =
         PixelConverter.fromPointToPixel(this.settings.labels.fontSize) / 2
-      render(this.renderChord(), this.rootElement)
+
+      this.renderChart()
     } catch (e) {
       this.eventService.renderingFailed(options, e)
     }
+  }
+
+  private renderChart() {
+    render(this.renderChord(), this.rootElement)
   }
 
   private updateFormatterAndDisplayName(options: VisualUpdateOptions) {
@@ -298,7 +308,6 @@ export class Visual implements IVisual {
   }
 
   private handleRibbonPointerOver = (event: any) => {
-    console.log(event)
     if (!this.chordChartProps) return
     const tooltip: TooltipShowOptions = this.createRibbonTooltip(event)
     if (event.detail.pointerType === 'touch') {
@@ -321,7 +330,6 @@ export class Visual implements IVisual {
     const detail: any = event.detail
     const index = detail.index as number
     const coordinates = [detail.x, detail.y] as number[]
-    console.log(event)
     const tooltipInfo: VisualTooltipDataItem = {
       displayName: this.chordChartProps.labels[index],
       value: this.valueColumnFormatter.format(detail.value),
@@ -340,7 +348,6 @@ export class Visual implements IVisual {
     const sourceIndex = detail.source.index as number
     const targetIndex = detail.target.index as number
     const coordinates = [detail.x, detail.y] as number[]
-    console.log(detail)
     const tooltip: TooltipShowOptions = {
       coordinates,
       isTouchEvent: detail.pointerType === 'touch',
@@ -381,5 +388,17 @@ export class Visual implements IVisual {
     this.tooltipService.hide({ immediately: true, isTouchEvent: false })
   }
 
-  public callTooltip(): void {}
+  private handleSlideClick = (event: any) => {
+    const index = event.detail.index as number
+    const selectionId = this.selectionIds[index]
+    this.selectionManager.select(selectionId)
+    this.chordChartProps.selectionIndexes = [index]
+    this.renderChart()
+  }
+
+  private handleSvgClick = () => {
+    this.selectionManager.clear()
+    this.chordChartProps.selectionIndexes = []
+    this.renderChart()
+  }
 }

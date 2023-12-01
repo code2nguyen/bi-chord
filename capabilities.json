@@ -169,8 +169,8 @@
       }
     }
   },
-  "supportsHighlight": true,
+  "supportsHighlight": false,
   "supportsKeyboardFocus": true,
-  "supportsMultiVisualSelection": true,
+  "supportsMultiVisualSelection": false,
   "privileges": []
 }
