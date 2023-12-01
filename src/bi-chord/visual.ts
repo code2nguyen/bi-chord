@@ -4,14 +4,6 @@ import './styles.scss'
 import powerbiVisualsApi from 'powerbi-visuals-api'
 import DataView = powerbiVisualsApi.DataView
 import IViewport = powerbiVisualsApi.IViewport
-import DataViewObjects = powerbiVisualsApi.DataViewObjects
-import DataViewValueColumn = powerbiVisualsApi.DataViewValueColumn
-import VisualObjectInstance = powerbiVisualsApi.VisualObjectInstance
-import DataViewMetadataColumn = powerbiVisualsApi.DataViewMetadataColumn
-import EnumerateVisualObjectInstancesOptions = powerbiVisualsApi.EnumerateVisualObjectInstancesOptions
-import DataViewValueColumnGroup = powerbiVisualsApi.DataViewValueColumnGroup
-import PrimitiveValue = powerbiVisualsApi.PrimitiveValue
-import VisualObjectInstanceEnumeration = powerbiVisualsApi.VisualObjectInstanceEnumeration
 import ISelectionId = powerbiVisualsApi.visuals.ISelectionId
 
 // powerbi.extensibility
@@ -27,14 +19,11 @@ import IVisualEventService = powerbiVisualsApi.extensibility.IVisualEventService
 import ITooltipService = powerbiVisualsApi.extensibility.ITooltipService
 import TooltipShowOptions = powerbiVisualsApi.extensibility.TooltipShowOptions
 
-// powerbi-visuals-utils-dataviewutils
-import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils'
-
 // powerbi.extensibility.utils.color
 import { ColorHelper } from 'powerbi-visuals-utils-colorutils'
 
 // powerbi.extensibility.utils.type
-import { pixelConverter as PixelConverter, double as TypeUtilsDouble } from 'powerbi-visuals-utils-typeutils'
+import { pixelConverter as PixelConverter } from 'powerbi-visuals-utils-typeutils'
 
 // powerbi-visuals-utils-svgutils
 import { IMargin } from 'powerbi-visuals-utils-svgutils'
@@ -46,7 +35,6 @@ import { render, html } from 'lit'
 import { VisualLayout } from './visualLayout'
 import { Settings } from './settings'
 import { getAxisPanel, getLabelPanel, getChordVisualPanel } from './visualSettingsModel'
-import { sum } from 'lodash-es'
 import '../chord/index'
 import { IValueFormatter, getFormatStringByColumn } from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter'
 
@@ -92,7 +80,6 @@ export class Visual implements IVisual {
   private seriesColumnFormatter: IValueFormatter
   private valueColumnFormatter: IValueFormatter
   private handleTouchTimeoutId: number
-  private dataview: DataView
   private seriesCount: number = 0
   private categoryCount: number = 0
   private categoryDisplayName: string = ''
@@ -144,8 +131,6 @@ export class Visual implements IVisual {
       if (!options.dataViews || !options.dataViews[0]) {
         return
       }
-      this.dataview = options.dataViews[0]
-
       // update formatter
       this.updateFormatterAndDisplayName(options)
 
