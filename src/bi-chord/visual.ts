@@ -24,6 +24,8 @@ import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualC
 import VisualUpdateOptions = powerbiVisualsApi.extensibility.visual.VisualUpdateOptions
 import ISelectionManager = powerbiVisualsApi.extensibility.ISelectionManager
 import IVisualEventService = powerbiVisualsApi.extensibility.IVisualEventService
+import ITooltipService = powerbiVisualsApi.extensibility.ITooltipService
+import TooltipShowOptions = powerbiVisualsApi.extensibility.TooltipShowOptions
 
 // powerbi-visuals-utils-dataviewutils
 import { dataViewWildcard } from 'powerbi-visuals-utils-dataviewutils'
@@ -37,12 +39,16 @@ import { pixelConverter as PixelConverter, double as TypeUtilsDouble } from 'pow
 // powerbi-visuals-utils-svgutils
 import { IMargin } from 'powerbi-visuals-utils-svgutils'
 
+//owerbi-visuals-utils-formattingutils
+import { valueFormatter } from 'powerbi-visuals-utils-formattingutils'
+
 import { render, html } from 'lit'
 import { VisualLayout } from './visualLayout'
 import { Settings } from './settings'
 import { getAxisPanel, getLabelPanel, getChordVisualPanel } from './visualSettingsModel'
-
+import { sum } from 'lodash-es'
 import '../chord/index'
+import { IValueFormatter, getFormatStringByColumn } from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter'
 
 export interface ChordChartProps {
   matrixData: number[][]
@@ -68,22 +74,36 @@ export class Visual implements IVisual {
     top: 10,
     bottom: 10,
   }
+
+  private host: IVisualHost
+
   private colors: IColorPalette
   private localizationManager: ILocalizationManager
-  private layout: VisualLayout
-  private host: IVisualHost
   private eventService: IVisualEventService
   private selectionManager: ISelectionManager
+  private tooltipService: ITooltipService
 
   private settings: Settings = new Settings()
+  private layout: VisualLayout
   private chordChartProps: ChordChartProps
   private rootElement: HTMLElement
   private selectionIds: ISelectionId[] = []
+  private categoryColumnFormatter: IValueFormatter
+  private seriesColumnFormatter: IValueFormatter
+  private valueColumnFormatter: IValueFormatter
+  private handleTouchTimeoutId: number
+  private dataview: DataView
+  private seriesCount: number = 0
+  private categoryCount: number = 0
+  private categoryDisplayName: string = ''
+  private seriesDisplayName: string = ''
+  private valueDisplayName: string = ''
 
   constructor(options: VisualConstructorOptions) {
     this.host = options.host
     this.localizationManager = this.host.createLocalizationManager()
     this.eventService = options.host.eventService
+    this.tooltipService = this.host.tooltipService
     this.colors = options.host.colorPalette
     this.rootElement = options.element
     this.initLayout()
@@ -97,6 +117,12 @@ export class Visual implements IVisual {
   private renderChord() {
     return html`<setect-chord
       id="chord"
+      @slicePointerOver=${this.handleSlicePointerOver}
+      @slicePointerMove=${this.handleSlicePointerMove}
+      @slicePointerOut=${this.hideTooltip}
+      @ribbonPointerOver=${this.handleRibbonPointerOver}
+      @ribbonPointerMove=${this.handleRibbonPointerMove}
+      @ribbonPointerOut=${this.hideTooltip}
       .matrixData=${this.chordChartProps.matrixData}
       .colors=${this.chordChartProps.colors}
       .width=${this.layout.viewport.width}
@@ -106,24 +132,33 @@ export class Visual implements IVisual {
   }
 
   public update(options: VisualUpdateOptions) {
+    console.log(options)
     this.eventService.renderingStarted(options)
     try {
       // assert dataView
       if (!options.dataViews || !options.dataViews[0]) {
         return
       }
+      this.dataview = options.dataViews[0]
+
+      // update formatter
+      this.updateFormatterAndDisplayName(options)
 
       // parse settings
       this.settings = Settings.PARSE_SETTINGS(options.dataViews[0], this.colors)
       console.log(this.settings)
 
       // parse data
-      const parseProps = this.parseChordChartProps(options)
-      if (parseProps) {
-        this.chordChartProps = parseProps.props
-        this.selectionIds = parseProps.selectionIds
+      const data = this.parseData(options)
+      if (data) {
+        this.chordChartProps = data.props
+        this.selectionIds = data.selectionIds
+        this.seriesCount = data.seriesCount
+        this.categoryCount = data.categoryCount
+      } else {
+        return
       }
-      console.log(this.chordChartProps)
+      console.log(data)
 
       this.layout.viewport = options.viewport
       this.layout.viewport = options.viewport
@@ -136,14 +171,35 @@ export class Visual implements IVisual {
     }
   }
 
-  private parseChordChartProps(
+  private updateFormatterAndDisplayName(options: VisualUpdateOptions) {
+    const dataView: DataView = options.dataViews[0]
+    const columns = dataView && dataView.metadata && dataView.metadata.columns
+    if (columns) {
+      const categoryColumn = columns.filter((x) => x.roles && x.roles['Category'])[0]
+      const seriesColumn = columns.filter((x) => x.roles && x.roles['Series'])[0]
+      const yColumn = columns.filter((x) => x.roles && x.roles['Y'])[0]
+      this.categoryColumnFormatter = valueFormatter.create({
+        format: getFormatStringByColumn(categoryColumn, true) || categoryColumn.format,
+      })
+      this.seriesColumnFormatter = valueFormatter.create({
+        format: seriesColumn && (getFormatStringByColumn(seriesColumn, true) || seriesColumn.format),
+      })
+      this.valueColumnFormatter = valueFormatter.create({
+        format: yColumn ? getFormatStringByColumn(yColumn, true) || yColumn.format : '0',
+      })
+      this.categoryDisplayName = categoryColumn.displayName
+      this.seriesDisplayName = seriesColumn.displayName
+      this.valueDisplayName = yColumn.displayName
+    }
+  }
+
+  private parseData(
     options: VisualUpdateOptions
-  ): { props: ChordChartProps; selectionIds: ISelectionId[] } | null {
+  ): { props: ChordChartProps; selectionIds: ISelectionId[]; seriesCount: number; categoryCount: number } | null {
     const matrixData: number[][] = []
     const labels: string[] = []
     const dataView: DataView = options.dataViews[0]
     const categorical = dataView.categorical
-    console.log(options)
     const colorHelper = new ColorHelper(
       this.colors,
       { objectName: 'dataPoint', propertyName: 'fill' },
@@ -158,20 +214,19 @@ export class Visual implements IVisual {
     const category = categorical.categories[categoryFieldIndex]
     const categoryValues = category.values
     const values = categorical.values.grouped()
-    const categorySize = categoryValues.length
-    const valueSize = values.length
-    const totalFields = categorySize + valueSize
+    const categoryCount = categoryValues.length
+    const seriesCount = values.length
+    const totalFields = categoryCount + seriesCount
     const selectionIds: ISelectionId[] = []
     const colors: string[] = []
 
-    for (let i = valueSize - 1; i >= 0; i--) {
-      const seriesName = values[i].name.toString()
+    for (let i = seriesCount - 1; i >= 0; i--) {
       const series = values[i]
+      const seriesName = series.name.toString()
       const ySeries = series.values[yFieldIndex]
       const row = new Array<number>(totalFields).fill(0)
-
-      for (let j = 0; j < categorySize; j++) {
-        row[valueSize + j] = (ySeries.values[categorySize - j - 1] as number) ?? 0
+      for (let j = 0; j < categoryCount; j++) {
+        row[seriesCount + j] = (ySeries.values[categoryCount - j - 1] as number) ?? 0
       }
 
       const selectionId = this.host
@@ -181,28 +236,23 @@ export class Visual implements IVisual {
       const color = colorHelper.getColorForSeriesValue(series.objects, seriesName)
       colors.push(color)
       selectionIds.push(selectionId)
-      labels.push(seriesName)
-
+      labels.push(this.seriesColumnFormatter.format(seriesName))
       matrixData.push(row)
     }
-    for (let i = categorySize - 1; i >= 0; i--) {
+    for (let i = categoryCount - 1; i >= 0; i--) {
       const row = new Array<number>(totalFields).fill(0)
-      const label = categoryValues[i].toString()
-      for (let j = 0; j < valueSize; j++) {
-        row[j] = matrixData[j][categorySize - i - 1 + valueSize]
+      const categoryName = categoryValues[i].toString()
+      for (let j = 0; j < seriesCount; j++) {
+        row[j] = matrixData[j][categoryCount - i - 1 + seriesCount]
       }
 
       const selectionId = this.host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
-      const color = colorHelper.getColorForSeriesValue(category.objects ? category.objects[i] : null, label)
+      const color = colorHelper.getColorForSeriesValue(category.objects ? category.objects[i] : null, categoryName)
       colors.push(color)
       selectionIds.push(selectionId)
-      labels.push(label)
+      labels.push(this.categoryColumnFormatter.format(categoryName))
       matrixData.push(row)
     }
-
-    console.log(selectionIds)
-    console.log(colors)
-
     return {
       props: {
         matrixData,
@@ -210,6 +260,8 @@ export class Visual implements IVisual {
         colors,
       },
       selectionIds,
+      seriesCount,
+      categoryCount,
     }
   }
 
@@ -225,4 +277,109 @@ export class Visual implements IVisual {
 
     return { cards: [chordVisualPanel, axisPanel, labelPanel] }
   }
+
+  private handleSlicePointerOver = (event: any) => {
+    if (!this.chordChartProps) return
+    const tooltip: TooltipShowOptions = this.createSliceTooltip(event)
+    if (event.detail.pointerType === 'touch') {
+      this.handleTouchTimeoutId = window.setTimeout(() => {
+        this.tooltipService.show(tooltip)
+        this.handleTouchTimeoutId = undefined
+      }, 500)
+    } else {
+      this.tooltipService.show(tooltip)
+    }
+  }
+
+  private handleSlicePointerMove = (event: any) => {
+    if (!this.chordChartProps) return
+    const tooltip: TooltipShowOptions = this.createSliceTooltip(event)
+    this.tooltipService.move(tooltip)
+  }
+
+  private handleRibbonPointerOver = (event: any) => {
+    console.log(event)
+    if (!this.chordChartProps) return
+    const tooltip: TooltipShowOptions = this.createRibbonTooltip(event)
+    if (event.detail.pointerType === 'touch') {
+      this.handleTouchTimeoutId = window.setTimeout(() => {
+        this.tooltipService.show(tooltip)
+        this.handleTouchTimeoutId = undefined
+      }, 500)
+    } else {
+      this.tooltipService.show(tooltip)
+    }
+  }
+
+  private handleRibbonPointerMove = (event: any) => {
+    if (!this.chordChartProps) return
+    const tooltip: TooltipShowOptions = this.createRibbonTooltip(event)
+    this.tooltipService.move(tooltip)
+  }
+
+  private createSliceTooltip(event: any): TooltipShowOptions {
+    const detail: any = event.detail
+    const index = detail.index as number
+    const coordinates = [detail.x, detail.y] as number[]
+    console.log(event)
+    const tooltipInfo: VisualTooltipDataItem = {
+      displayName: this.chordChartProps.labels[index],
+      value: this.valueColumnFormatter.format(detail.value),
+    }
+    const tooltip: TooltipShowOptions = {
+      coordinates,
+      isTouchEvent: detail.pointerType === 'touch',
+      dataItems: [tooltipInfo],
+      identities: [this.selectionIds[detail.index]],
+    }
+    return tooltip
+  }
+
+  private createRibbonTooltip(event: any): TooltipShowOptions {
+    const detail: any = event.detail
+    const sourceIndex = detail.source.index as number
+    const targetIndex = detail.target.index as number
+    const coordinates = [detail.x, detail.y] as number[]
+    console.log(detail)
+    const tooltip: TooltipShowOptions = {
+      coordinates,
+      isTouchEvent: detail.pointerType === 'touch',
+      dataItems: [
+        {
+          displayName: this.getDisplayName(targetIndex),
+          value: this.chordChartProps.labels[targetIndex],
+        },
+        {
+          displayName: this.getDisplayName(sourceIndex),
+          value: this.chordChartProps.labels[sourceIndex],
+        },
+        {
+          displayName: this.valueDisplayName,
+          value: this.valueColumnFormatter.format(detail.source.value),
+        },
+      ],
+      identities: [this.selectionIds[sourceIndex], this.selectionIds[targetIndex]],
+    }
+    return tooltip
+  }
+
+  private getDisplayName(index: number) {
+    if (index < this.seriesCount) {
+      return this.seriesDisplayName
+    } else {
+      return this.categoryDisplayName
+    }
+  }
+
+  public cancelTouchTimeoutEvents() {
+    if (this.handleTouchTimeoutId) {
+      clearTimeout(this.handleTouchTimeoutId)
+    }
+  }
+
+  private hideTooltip = () => {
+    this.tooltipService.hide({ immediately: true, isTouchEvent: false })
+  }
+
+  public callTooltip(): void {}
 }

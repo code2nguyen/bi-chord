@@ -2,29 +2,13 @@ import { LitElement, html, css, PropertyValueMap } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { select, Selection } from 'd3-selection'
 import { arc, Arc, DefaultArcObject } from 'd3-shape'
-import { chord, ribbon, Chords, ChordLayout, ChordGroup } from 'd3-chord'
-import { sum, range } from 'd3-array'
+import { chord, ribbon, Chords, ChordGroup } from 'd3-chord'
+import { range } from 'd3-array'
 // powerbi.extensibility.utils.chart
-import {
-  dataLabelInterfaces,
-  legendInterfaces,
-  DataLabelManager,
-  DataLabelArrangeGrid,
-  dataLabelUtils,
-} from 'powerbi-visuals-utils-chartutils'
+import { dataLabelInterfaces, DataLabelManager, dataLabelUtils } from 'powerbi-visuals-utils-chartutils'
 // powerbi.extensibility.utils.svg
-import {
-  manipulation,
-  IMargin,
-  IRect,
-  shapes,
-  Rect,
-  CssConstants,
-  shapesInterfaces,
-} from 'powerbi-visuals-utils-svgutils'
-import { valueFormatter } from 'powerbi-visuals-utils-formattingutils'
-import { pixelConverter as PixelConverter, double as TypeUtilsDouble } from 'powerbi-visuals-utils-typeutils'
-import lessWithPrecision = TypeUtilsDouble.lessWithPrecision
+import { manipulation } from 'powerbi-visuals-utils-svgutils'
+import { pixelConverter as PixelConverter } from 'powerbi-visuals-utils-typeutils'
 import ILabelLayout = dataLabelInterfaces.ILabelLayout
 import { valueFormatter as ValueFormatter } from 'powerbi-visuals-utils-formattingutils'
 import createFormatter = ValueFormatter.create
