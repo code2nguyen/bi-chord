@@ -1,15 +1,14 @@
 {
-  "name": "setecteocen-chord",
+  "name": "bi-chord",
   "version": "0.0.0",
   "private": true,
-  "description": "Setect EOCEN visuals chord",
+  "description": "BI visuals chord",
   "scripts": {
     "pbiviz": "pbiviz",
     "start": "vite --open",
     "lint": "DEBUG=eslint:cli-engine eslint . --ext .ts --fix --ignore-path .gitignore",
     "bi": "pbiviz start"
   },
-  "author": "Setect EOCEN",
   "license": "UNLICENSED",
   "dependencies": {
     "d3-chord": "3.0.1",

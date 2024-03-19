@@ -104,7 +104,7 @@ export class Visual implements IVisual {
   }
 
   private renderChord() {
-    return html`<setect-chord
+    return html`<c2-chord
       id="chord"
       @slicePointerOver=${this.handleSlicePointerOver}
       @slicePointerMove=${this.handleSlicePointerMove}
@@ -120,7 +120,7 @@ export class Visual implements IVisual {
       .width=${this.layout.viewport.width}
       .height=${this.layout.viewport.height}
       .labels=${this.chordChartProps.labels}
-    ></setect-chord>`
+    ></c2-chord>`
   }
 
   public update(options: VisualUpdateOptions) {

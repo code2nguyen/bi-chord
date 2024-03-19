@@ -32,7 +32,7 @@ export interface ChordArcDescriptor extends ChordGroup {
   data: ChordArcLabelData
 }
 
-@customElement('setect-chord')
+@customElement('c2-chord')
 export class ChordChart extends LitElement {
   private static LABEL_MARGIN = 10
   private static DEFAULT_DY = '.35em'
@@ -49,7 +49,7 @@ export class ChordChart extends LitElement {
         position: relative;
         cursor: pointer;
       }
-      .setect-chord {
+      .c2-chord {
         position: absolute;
       }
       path.chord {
@@ -109,7 +109,7 @@ export class ChordChart extends LitElement {
     console.log('createChart')
     // eslint-disable-next-line powerbi-visuals/no-http-string
     this.$el = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    this.$el.classList.add('setect-chord')
+    this.$el.classList.add('c2-chord')
 
     this.svg = select(this.$el)
 

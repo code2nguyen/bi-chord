@@ -1,7 +1,7 @@
 {
   "visual": {
     "name": "ChordChart",
-    "displayName": "Setect Chord",
+    "displayName": "BI Chord",
     "guid": "ChordChart751916EB820D4607A25643204135914E",
     "visualClassName": "Visual",
     "version": "0.0.0.0",
@@ -11,7 +11,7 @@
   },
   "apiVersion": "5.4.0",
   "author": {
-    "name": "Setect EOCEN",
+    "name": "Nguyen Thai Vinh",
     "email": "code2nguyen@gmail.com"
   },
   "assets": {
